@@ -3,33 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace OgreMaze
 {
-    struct ExampleMaps
-    {
-        public static string[] Example1 = {"@@........", 
-                                       "@@O.......",
-                                       ".....O.O..",
-                                       "..........",
-                                       "..O.O.....",
-                                       "..O....O.O",
-                                       ".O........",
-                                       ".........",
-                                       ".....OO...",
-                                       ".........$" };
-        public static string[] Example2 = { "@@........",
-                                       "@@O.......", 
-                                       ".....O.O.",
-                                       "..........",
-                                       "..O.O.....",
-                                       "..O....O.O",
-                                       ".O........",
-                                       "..........",
-                                       ".....OO.O.",
-                                       ".........$" };
-    }
-
     internal class Node : IComparable
     {
         internal Space Space;
@@ -49,7 +26,7 @@ namespace OgreMaze
         {
             get
             {
-                return Space.Gold;
+                return Space.OgreCanFindTheGoldHere;
             }
         }
 
@@ -107,13 +84,38 @@ namespace OgreMaze
         private SortedList<Node, Space> Open;
         private List<Space> Closed;
 
-        public GoldFinder(string[] map)
+        public GoldFinder(char[][] map)
         {
             Map = new Swamp(map); ;
             StartPosition = Map.OgrePosition;
             EndPosition = Map.GoldPosition;
             Open = new SortedList<Node,Space>();
             Closed = new List<Space>();
+        }
+
+        void printPath(Node end)
+        {
+            char[][] map = Map.Map;
+
+            Node cur = end;
+            while (true)
+            {
+                for (int y = 0; y < 2 && cur.Space.Y + y < map.Length; y++)
+                {
+                    for (int x = 0; x < 2 && cur.Space.X + x < map.Length; x++)
+                    {
+                        map[cur.Space.Y + y][cur.Space.X + x] = '&';
+                    }
+                }
+
+                if (cur.Space == StartPosition)
+                {
+                    break;
+                }
+                cur = cur.Parent;
+            }
+
+            Swamp.PrintMap(map);
         }
 
         void ProcessNeighbor(Node cur, Node neighbor)
@@ -123,7 +125,7 @@ namespace OgreMaze
                 return;
             }
 
-            if (neighbor.Space.Sinkhole)
+            if (!neighbor.Space.OgreCanStandHere)
             {
                 Closed.Add(neighbor.Space);
                 return;
@@ -157,6 +159,8 @@ namespace OgreMaze
 
                 if (cur.Goal)
                 {
+                    Console.WriteLine("Found a path:");
+                    printPath(cur);
                     return;
                 }
 
@@ -170,6 +174,8 @@ namespace OgreMaze
                 ProcessNeighbor(cur, new Node(cur.Space.West));
 
             }
+
+            Console.WriteLine("Could not find a path.");
         }
     }
 }

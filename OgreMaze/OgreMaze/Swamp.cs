@@ -7,6 +7,52 @@ using System.Threading.Tasks;
 namespace OgreMaze
 {
 
+    struct ExampleMaps
+    {
+
+        public static char[][] Example1, Example2;
+
+        public static string[] Example1Pre = {"@@........", 
+                                       "@@O.......",
+                                       ".....O.O..",
+                                       "..........",
+                                       "..O.O.....",
+                                       "..O....O.O",
+                                       ".O........",
+                                       "..........",
+                                       ".....OO...",
+                                       ".........$" };
+        public static string[] Example2Pre = { "@@........",
+                                       "@@O.......", 
+                                       ".....O.O.",
+                                       "..........",
+                                       "..O.O.....",
+                                       "..O....O.O",
+                                       ".O........",
+                                       "..........",
+                                       ".....OO.O.",
+                                       ".........$" };
+
+        static ExampleMaps()
+        {
+            Convert(Example1Pre, out Example1);
+            Convert(Example2Pre, out Example2);
+        }
+
+        private static void Convert(string[] src, out char[][] dst)
+        {
+            dst = new char[src.Length][];
+
+            uint i = 0;
+            foreach (string s in src)
+            {
+                //Debug.WriteLine("Example1[" + i + "++] = \"" + s + "\".ToCharArray();");
+                dst[i++] = s.ToCharArray();
+                //Debug.WriteLine("Sucess");
+            }
+        }
+    }
+
     internal enum Terrain
     {
         Invalid,
@@ -49,7 +95,7 @@ namespace OgreMaze
         {
             get
             {
-                return Swamp[XCoord - 1, YCoord];
+                return Swamp[YCoord - 1, XCoord];
             }
         }
 
@@ -57,7 +103,7 @@ namespace OgreMaze
         {
             get
             {
-                return Swamp[XCoord, YCoord + 1];
+                return Swamp[YCoord, XCoord + 1];
             }
         }
 
@@ -65,7 +111,7 @@ namespace OgreMaze
         {
             get
             {
-                return Swamp[XCoord + 1, YCoord];
+                return Swamp[YCoord + 1, XCoord];
             }
         }
 
@@ -73,7 +119,7 @@ namespace OgreMaze
         {
             get
             {
-                return Swamp[XCoord, YCoord - 1];
+                return Swamp[YCoord, XCoord - 1];
             }
         }
 
@@ -92,24 +138,43 @@ namespace OgreMaze
                 return Terrain == Terrain.Gold;
             }
         }
+
+        public bool OgreCanFindTheGoldHere
+        {
+            get
+            {
+                return Gold || East.Gold || South.Gold || South.East.Gold;  
+            }
+        }
+
+        public bool OgreCanStandHere
+        {
+            get
+            {
+                return East != null && South != null && South.East != null && 
+                    !Sinkhole && !East.Sinkhole && !South.Sinkhole && !South.East.Sinkhole;
+            }
+        }
     }
 
     internal class Swamp
     {
-
         public Space OgrePosition;
         public Space GoldPosition;
         private Space[,] Layout;
+        internal char[][] Map;
 
-        public Swamp(string[] map)
+        public Swamp(char[][] map)
         {
-            int xLen = new System.Globalization.StringInfo(map[0]).LengthInTextElements;
+            Map = map;
+
             int yLen = map.Length;
-            Layout = new Space[xLen, yLen];
+            int xLen = map[0].Length;
+            Layout = new Space[yLen, xLen];
 
             OgrePosition = GoldPosition = null;
             int x, y = 0;
-            foreach (string s in map)
+            foreach (char[] s in map)
             {
                 x = 0;
                 foreach (char c in s)
@@ -138,14 +203,14 @@ namespace OgreMaze
                     }
 
 
-                    Layout[x, y] = new Space(x, y, this, t);
+                    Layout[y, x] = new Space(x, y, this, t);
                     if (OgrePosition == null && ogreIsHere)
                     {
-                        OgrePosition = Layout[x, y];
+                        OgrePosition = Layout[y, x];
                     }
                     if (GoldPosition == null && goldIsHere)
                     {
-                        GoldPosition = Layout[x, y];
+                        GoldPosition = Layout[y, x];
                     }
                     x++;
                 }
@@ -153,15 +218,23 @@ namespace OgreMaze
             }
         }
 
-        public Space this[int x, int y]
+        public Space this[int y, int x]
         {
             get
             {
-                if (x < 0 || x >= Layout.GetLength(0) || y < 0 || y >= Layout.Rank)
+                if (y < 0 || y >= Layout.GetLength(0) || x < 0 || x >= Layout.GetLength(1))
                 {
                     return null;
                 }
-                return Layout[x, y];
+                return Layout[y, x];
+            }
+        }
+
+        public static void PrintMap(char[][] map)
+        {
+            foreach (char[] s in map)
+            {
+                Console.WriteLine(s);
             }
         }
     }
